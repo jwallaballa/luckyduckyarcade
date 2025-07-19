@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Python Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for a retro arcade feel */
+        body {
+            font-family: 'Press Start 2P', cursive, 'Inter', sans-serif; /* Retro font first */
+            background-color: #0d1117; /* Darker background, like a dark arcade */
+            color: #e2e8f0; /* Light text for contrast */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px; /* Add some padding for smaller screens */
+            background-image: url('https://placehold.co/1920x1080/0d1117/e2e8f0?text=ARCADE%20BACKGROUND'); /* Placeholder for a future arcade background pattern */
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            overflow-y: auto; /* Allow scrolling if content is tall */
+        }
+        /* Override default Tailwind font for specific elements if needed */
+        .font-sans-default {
+            font-family: 'Inter', sans-serif; /* Use Inter for longer text blocks for readability */
+        }
+        .container {
+            background-color: #1c2633; /* Dark blue-grey for arcade cabinet feel */
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 255, 255, 0.4), 0 0 10px rgba(0, 255, 255, 0.2) inset; /* Neon glow effect */
+            padding: 3rem;
+            max-width: 960px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            border: 5px solid #00ffff; /* Cyan border */
+            animation: pulse-border 2s infinite alternate; /* Pulsing border animation */
+        }
+
+        @keyframes pulse-border {
+            from { border-color: #00ffff; box-shadow: 0 10px 25px rgba(0, 255, 255, 0.4), 0 0 10px rgba(0, 255, 255, 0.2) inset; }
+            to { border-color: #ff00ff; box-shadow: 0 10px 25px rgba(255, 0, 255, 0.4), 0 0 10px rgba(255, 0, 255, 0.2) inset; }
+        }
+
+        .title-text {
+            text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff; /* Stronger neon glow */
+        }
+
+        .game-select-button {
+            @apply bg-gradient-to-br from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-110 active:scale-95;
+            border: 2px solid #fff; /* White border for buttons */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* Text shadow for legibility */
+        }
+
+        /* Force hide the game selection buttons when the 'hidden' class is applied */
+        #game-selection.hidden {
+            display: none !important;
+        }
+
+        .game-output-area { /* This class is applied alongside the ID text-game-output-area */
+            background-color: #0d1117; /* Even darker for the screen */
+            border: 3px solid #00ff00; /* Green retro screen border */
+            min-height: 250px;
+            padding: 1.5rem;
+            font-family: 'Press Start 2P', cursive, monospace; /* Pixel font for game output */
+            white-space: pre-wrap;
+            overflow-y: auto;
+            max-height: 450px;
+            border-radius: 0.75rem;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6); /* Green screen glow */
+            color: #00ff00; /* Green text for terminal feel */
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.8); /* Subtle text glow */
+        }
+        .game-input-group {
+            display: flex;
+            gap: 1.5rem; /* More spacing */
+            align-items: center;
+        }
+        .game-input {
+            @apply flex-grow p-4 rounded-xl bg-gray-800 border-2 border-green-500 text-white focus:outline-none focus:ring-4 focus:ring-green-700;
+            font-family: 'Press Start 2P', cursive, monospace;
+            color: #00ff00; /* Green text */
+            text-shadow: 0 0 3px rgba(0, 255, 0, 0.7);
+        }
+        .game-submit-button, .game-reset-button {
+            @apply bg-gradient-to-br from-green-500 to-emerald-700 hover:from-green-600 hover:to-emerald-800 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 active:scale-95;
+            border: 2px solid #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .back-button {
+             @apply bg-gradient-to-br from-red-500 to-pink-700 hover:from-red-600 hover:to-pink-800 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 active:scale-95;
+             border: 2px solid #fff;
+             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .game-control-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 1.5rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .container {
+                padding: 1.5rem;
+                border-radius: 1rem;
+            }
+            .game-select-button {
+                padding: 12px 24px;
+                font-size: 0.9rem;
+            }
+            .game-input-group {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .game-input {
+                width: 100%;
+            }
+            .game-submit-button, .game-reset-button, .back-button {
+                width: 100%;
+                padding: 12px;
+                font-size: 0.9rem;
+            }
+            .game-control-buttons {
+                flex-direction: column;
+            }
+            .header-content-wrapper {
+                flex-direction: column; /* Stack GIFs and title on small screens */
+            }
+            .gif-container {
+                margin-bottom: 0.5rem; /* Reduce margin when stacked */
+            }
+        }
+        .gif-container {
+            display: flex;
+            justify-content: center;
+            /* margin-bottom is now handled by gap on header-content-wrapper */
+        }
+        .arcade-gif {
+            max-width: 150px; /* Adjust size as needed */
+            height: auto;
+            border-radius: 0.5rem;
+            /* Removed static box-shadow and border, now using animation */
+            animation: pulse-gif-glow 2s infinite alternate; /* Apply the new animation */
+        }
+        /* New styling for the wrapper around GIFs and H1 */
+        .header-content-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem; /* Space between GIFs and title */
+            margin-bottom: 2.5rem; /* Space below the entire header section */
+        }
+
+        /* New keyframe animation for the GIF glow */
+        @keyframes pulse-gif-glow {
+            0% {
+                border: 3px solid #ffa500; /* Orange */
+                box-shadow: 0 0 15px rgba(255, 165, 0, 0.7);
+            }
+            50% {
+                border: 3px solid #00ff00; /* Green */
+                box-shadow: 0 0 25px rgba(0, 255, 0, 0.8);
+            }
+            100% {
+                border: 3px solid #ffa500; /* Back to Orange */
+                box-shadow: 0 0 15px rgba(255, 165, 0, 0.7);
+            }
+        }
+
+        /* Style for the ASCII game display area */
+        #text-game-output-area {
+            background-color: #0d1117; /* Dark background */
+            border: 3px solid #00ff00; /* Green retro screen border */
+            min-height: 250px;
+
+            padding: 0.8rem;
+            font-family: 'Press Start 2P', cursive, monospace;
+            white-space: pre; /* Essential for ASCII art */
+
+            overflow-x: auto;
+            max-height: 450px;
+            border-radius: 0.75rem;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+            color: #00ff00; /* Green text for terminal feel */
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);
+
+            /* *** MODIFIED STYLES FOR CENTERING AND SIZE *** */
+            font-size: 14px;
+            line-height: 1.1;
+
+            /* Center the block element itself */
+            margin-left: auto;
+            margin-right: auto;
+
+            max-width: 82ch;
+
+            /* Removed text-align: center; from here */
+        }
+
+        /* New class for centering text content */
+        .text-center-content {
+            text-align: center;
+        }
+
+        /* Width for games */
+        .width-pong {
+            max-width: 82ch;
+        }
+
+        .width-snake {
+            max-width: 62ch;
+        }
+
+        .width-ttt {
+            max-width: 40ch;
+        }
+
+        /* Styles for the Initials Input Modal */
+        .initials-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .initials-modal-content {
+            background-color: #1c2633;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+            text-align: center;
+            border: 3px solid #00ffff;
+            animation: pulse-border 2s infinite alternate;
+        }
+
+        .initials-modal-input {
+            @apply p-3 rounded-md bg-gray-800 border-2 border-green-500 text-white focus:outline-none focus:ring-4 focus:ring-green-700;
+            font-family: 'Press Start 2P', cursive, monospace;
+            width: 100%;
+            max-width: 200px;
+            text-align: center;
+            margin-top: 1rem;
+            text-transform: uppercase; /* Ensure initials are uppercase */
+        }
+
+        .initials-modal-button {
+            @apply bg-gradient-to-br from-green-500 to-emerald-700 hover:from-green-600 hover:to-emerald-800 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 active:scale-95;
+            border: 2px solid #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    {# Load static files before using the 'static' tag #}
+    {% load static %}
+
+    <div class="container">
+        {# Add the CSRF token here so JavaScript can access it #}
+        {% csrf_token %}
+
+        <div class="header-content-wrapper">
+            <div class="gif-container">
+                <img src="{% static 'images/pixle_duck.gif' %}"
+                     alt="Retro Arcade Animation" class="arcade-gif"
+                     onerror="this.onerror=null;this.src='https://placehold.co/150x150/ffc107/000000?text=GIF%20Loading%20Error';">
+            </div>
+
+            <h1 class="text-5xl font-bold text-center title-text">LUCKY DUCKY ARCADE</h1>
+
+            <div class="gif-container">
+                <img src="{% static 'images/pixle_duck.gif' %}"
+                     alt="Retro Arcade Animation" class="arcade-gif"
+                     onerror="this.onerror=null;this.src='https://placehold.co/150x150/ffc107/000000?text=GIF%20Loading%20Error';">
+            </div>
+        </div>
+
+
+        <div id="game-selection" class="flex flex-col sm:flex-row justify-center items-center gap-6">
+            <button class="game-select-button" data-game="pong_ascii">PONG</button>
+            <button class="game-select-button" data-game="snake_ascii">SNAKE</button>
+            <button class="game-select-button" data-game="tic_tac_toe">TIC-TAC-TOE</button>
+        </div>
+
+        {# Removed the dedicated high-scores-section from the main menu #}
+
+        <div id="game-play-area" class="hidden flex-col gap-4">
+            <h2 id="current-game-title" class="text-4xl font-semibold text-center text-green-300 title-text"></h2>
+
+            {# The text-game-output-area will now serve for all text-based games including ASCII Pong #}
+            <div id="text-game-output-area" class="game-output-area font-sans-default">
+            </div>
+
+            <div id="game-input-container" class="game-input-group">
+                <input type="text" id="game-input" class="game-input" placeholder="TYPE COMMAND...">
+                <button id="game-submit" class="game-submit-button">SUBMIT</button>
+            </div>
+            <div class="game-control-buttons">
+                <button id="game-reset" class="game-reset-button">RESET GAME</button>
+                <button id="back-to-menu" class="back-button">BACK TO MENU</button>
+            </div>
+        </div>
+    </div>
+
+    {# Initials Input Modal #}
+    <div id="initials-modal" class="initials-modal hidden">
+        <div class="initials-modal-content">
+            <h3 id="initials-modal-title" class="text-3xl font-semibold mb-4">ENTER YOUR INITIALS FOR <span id="game-name-for-initials"></span></h3>
+            <input type="text" id="initials-input" class="initials-modal-input" maxlength="3" placeholder="MAX 3 CHARS">
+            <button id="initials-submit-button" class="initials-modal-button">START GAME</button>
+        </div>
+    </div>
+
+    <script>
+        // Get references to DOM elements
+        const gameSelectionDiv = document.getElementById('game-selection');
+        const gamePlayAreaDiv = document.getElementById('game-play-area');
+        const currentGameTitle = document.getElementById('current-game-title');
+        const textGameOutputDiv = document.getElementById('text-game-output-area');
+        const gameInput = document.getElementById('game-input');
+        const gameSubmitButton = document.getElementById('game-submit');
+        const gameResetButton = document.getElementById('game-reset');
+        const backToMenuButton = document.getElementById('back-to-menu');
+        const gameInputContainer = document.getElementById('game-input-container');
+        // Removed high score section elements from here
+
+        // Initials Modal Elements
+        const initialsModal = document.getElementById('initials-modal');
+        const initialsModalTitle = document.getElementById('initials-modal-title');
+        const gameNameForInitialsSpan = document.getElementById('game-name-for-initials');
+        const initialsInput = document.getElementById('initials-input');
+        const initialsSubmitButton = document.getElementById('initials-submit-button');
+
+        let activeGame = null; // Stores the name of the currently active game
+        let gameLoopId = null; // Renamed from pongAsciiGameLoopId for general use
+        let gameReadyToStart = false; // True when game is loaded, but waiting for Enter
+        let playerInitials = ''; // Store player initials
+        let gameDisplayNameMap = { // Map game_name to display name
+            'pong_ascii': 'PONG',
+            'snake_ascii': 'SNAKE',
+            'tic_tac_toe': 'TIC-TAC-TOE'
+        };
+
+        // Track paddle movement direction for continuous input to backend (for Pong)
+        let paddleAMoveDirection = 0; // -1 for up, 1 for down, 0 for stop
+
+        // Track snake direction for continuous input to backend (for Snake)
+        let snakeDirection = 'RIGHT'; // Default direction for Snake
+
+        // Function to get CSRF token from the hidden input field
+        function getCsrfToken() {
+            const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            return csrfInput ? csrfInput.value : '';
+        }
+
+        // Function to send command to Django backend
+        async function sendCommand(command, extraData = {}) {
+            if (!activeGame) return; // No game selected
+
+            try {
+                const csrfToken = getCsrfToken(); // Get the token using the new function
+                if (!csrfToken) {
+                    console.error("CSRF token not found. Cannot send request.");
+                    textGameOutputDiv.textContent += '\n[ERROR: CSRF TOKEN MISSING. REFRESH PAGE.]';
+                    clearInterval(gameLoopId);
+                    gameLoopId = null;
+                    return;
+                }
+
+                const payload = {
+                    game_name: activeGame,
+                    input: command,
+                    ...extraData // Include any extra data like paddle movement or snake direction
+                };
+
+                const response = await fetch(`${window.location.origin}/play_game/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // Include CSRF token in header
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text(); // Get raw error text from server
+                    throw new Error(`HTTP error! status: ${response.status}. Server response: ${errorText}`);
+                }
+
+                const data = await response.json();
+
+                // For ASCII games, replace content; for other games, append
+                if (activeGame === 'pong_ascii' || activeGame === 'snake_ascii' || activeGame === 'tic_tac_toe') {
+                    textGameOutputDiv.textContent = data.output;
+                } else {
+                    textGameOutputDiv.textContent += '\n> ' + command + '\n' + data.output;
+                    textGameOutputDiv.scrollTop = textGameOutputDiv.scrollHeight; // Auto-scroll for non-pong text games
+                }
+
+                // Centralized input visibility control
+                if (data.state === 'game_over') {
+                    clearInterval(gameLoopId); // Stop the loop if game is over
+                    gameLoopId = null;
+                    gameInputContainer.style.display = 'none'; // Hide input if game is truly over
+
+                    // Only attempt to save high score if it's Snake and a score is present
+                    if (data.score !== undefined && activeGame === 'snake_ascii') {
+                        saveHighScore(playerInitials, data.score);
+                    }
+                } else if (activeGame === 'pong_ascii' || activeGame === 'snake_ascii') {
+                    // For continuous input games, hide manual input field
+                    gameInputContainer.style.display = 'none';
+                } else if (activeGame === 'tic_tac_toe') {
+
+                    const tttInternalState = data.game_internal_state;
+                    const humanPlayer = data.human_player;
+                    const currentPlayer = data.current_player;
+
+                    if (tttInternalState === 'CHOICE' || (tttInternalState === 'PLAYING' && currentPlayer === humanPlayer)) {
+                        gameInputContainer.style.display = 'flex';
+                        gameInput.focus();
+                        // Update placeholder based on internal state
+                        if (tttInternalState === 'CHOICE') {
+                            gameInput.placeholder = "TYPE 'X' OR 'O' TO CHOOSE YOUR SIDE";
+                        } else { // PLAYING and it's human's turn
+                            gameInput.placeholder = "ENTER ROW,COL (E.G., '0,0')";
+                        }
+                    } else {
+                        // Hide input if AI's turn, or in a state where input isn't expected (e.g., GAME_OVER)
+                        gameInputContainer.style.display = 'none';
+                    }
+                } else {
+                    // Default for other text-based games
+                    gameInputContainer.style.display = 'flex';
+                    gameInput.focus();
+                    gameInput.placeholder = "TYPE COMMAND..."; //  Placeholder for other  games
+                }
+            } catch (error) { //
+                console.error('Error sending command:', error);
+                textGameOutputDiv.textContent += '\n[ERROR: COULD NOT COMMUNICATE WITH GAME SERVER. ' + error.message + ']';
+                clearInterval(gameLoopId); // Stop loop on error
+                gameLoopId = null;
+            }
+            gameInput.value = ''; // Clear input field
+        }
+
+        // Function to save high score
+        async function saveHighScore(initials, score) {
+            // This function will now only be called for Snake due to changes in sendCommand
+            try {
+                const csrfToken = getCsrfToken();
+                if (!csrfToken) {
+                    console.error("CSRF token not found. Cannot save high score.");
+                    return;
+                }
+
+                const payload = {
+                    game_name: activeGame, // This will be 'snake_ascii' when called
+                    initials: initials.toUpperCase(), // Ensure uppercase
+                    score: score
+                };
+
+                const response = await fetch(`${window.location.origin}/save_high_score/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}. Server response: ${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log('High score saved:', data);
+                // No longer refreshing a separate high score list here
+            } catch (error) {
+                console.error('Error saving high score:', error);
+            }
+        }
+
+        // Function to fetch a single high score for display in-game
+        async function fetchSingleHighScore(gameName) {
+            // This function should only be called for 'snake_ascii' now
+            try {
+                const response = await fetch(`${window.location.origin}/get_high_scores/?game_name=${gameName}&limit=1`); // Fetch only the top score
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (data.high_scores && data.high_scores.length > 0) {
+                    return data.high_scores[0]; // Return the top score object
+                }
+                return { initials: '---', score: 0 }; // Default if no high score
+            } catch (error) {
+                console.error('Error fetching single high score:', error);
+                return { initials: '---', score: 0 }; // Return default on error
+            }
+        }
+
+
+        // Display Snake game instructions
+        async function displaySnakeInstructions() {
+            const highScore = await fetchSingleHighScore('snake_ascii');
+            textGameOutputDiv.textContent =
+                `SNAKE LOADED. PLAYER: ${playerInitials}. HIGH SCORE: ${highScore.score} by ${highScore.initials}\n\n\n` +
+                'INSTRUCTIONS:\n\n' +
+                'USE W, A, S, D KEYS TO MOVE.\n\n' +
+                'EAT \'@\' TO GROW.\n\n' +
+                'DON\'T HIT WALLS OR YOURSELF.\n\n' +
+                'PRESS \'R\' TO RESET.\n\n' +
+                'PRESS \'BACK TO MENU\' TO EXIT.\n';
+        }
+
+        // Display Tic-Tac-Toe instructions (now handles initial choice)
+        function displayTicTacToeInstructions() {
+            textGameOutputDiv.textContent =
+                `TIC-TAC-TOE LOADED. PLAYER: ${playerInitials}. LOADING GAME...\n\n` +
+                'INSTRUCTIONS:\n\n' +
+                'TYPE \'X\' OR \'O\' TO CHOOSE YOUR SIDE.\n\n' +
+                'ENTER ROW,COL (E.G., \'0,0\') TO MAKE A MOVE.\n\n' +
+                'PRESS \'R\' TO RESET.\n\n' +
+                'PRESS \'BACK TO MENU\' TO EXIT.\n';
+
+        }
+
+        // Display Pong instructions (no longer fetches/displays high score)
+        function displayPongInstructions() {
+            textGameOutputDiv.textContent =
+                `PONG LOADED. PLAYER: ${playerInitials}.\n\n\n` +
+                'INSTRUCTIONS:\n\n' +
+                'YOU ARE PLAYER A & CONTROLLING THE LEFT PADDLE.\n\n' +
+                'COMPUTER IS PLAYER B & CONTROLLING THE RIGHT PADDLE.\n\n' +
+                'MOVE YOUR PADDLE WITH W & S\n\n' +
+                'FIRST PLAYER TO 5 POINTS WINS\n';
+        }
+
+
+        // Event listener for game selection buttons
+        gameSelectionDiv.addEventListener('click', async (event) => {
+            const button = event.target.closest('.game-select-button');
+            if (button) {
+                activeGame = button.dataset.game;
+                const gameDisplayName = gameDisplayNameMap[activeGame]; // Use map for display name
+                currentGameTitle.textContent = gameDisplayName;
+                currentGameTitle.classList.remove('hidden');
+
+                // Hide the game selection buttons
+                gameSelectionDiv.classList.add('hidden');
+                // highScoresSection.classList.add('hidden'); // This was already commented/removed
+
+                // Show the game play area
+                gamePlayAreaDiv.classList.remove('hidden');
+                gamePlayAreaDiv.style.display = 'flex'; // Explicitly set display flex
+
+                // Stop any running game loop before switching
+                if (gameLoopId) {
+                    clearInterval(gameLoopId);
+                    gameLoopId = null;
+                }
+                // Reset game-specific state and remove all key listeners EXCEPT the global 'Enter' listener
+                paddleAMoveDirection = 0;
+                snakeDirection = 'RIGHT'; // Reset Snake direction
+                document.removeEventListener('keydown', handlePongKeydown);
+                document.removeEventListener('keyup', handlePongKeyup);
+                document.removeEventListener('keydown', handleSnakeKeydown);
+
+                // Show text game output area
+                textGameOutputDiv.classList.remove('hidden');
+
+                // Clear all previous width classes
+                textGameOutputDiv.classList.remove('width-pong', 'width-snake', 'width-ttt');
+
+                // *** Manage text alignment class based on game ***
+                textGameOutputDiv.classList.remove('text-center-content'); // Remove previous alignment
+                if (activeGame === 'tic_tac_toe') {
+                    textGameOutputDiv.classList.add('text-center-content'); // Add center alignment for Tic-Tac-Toe
+                }
+
+
+                // Show initials modal ONLY for Snake (the game that tracks high scores)
+                if (activeGame === 'snake_ascii') {
+                    gameNameForInitialsSpan.textContent = gameDisplayName; // Use gameDisplayName
+                    initialsModal.classList.remove('hidden');
+                    initialsInput.value = ''; // Clear previous initials
+                    initialsInput.focus();
+                    gameReadyToStart = false; // Wait for initials input
+                    gamePlayAreaDiv.classList.add('hidden'); // Hide game area until initials are entered
+                } else if (activeGame === 'pong_ascii') { // Pong no longer needs initials modal
+                    textGameOutputDiv.classList.add('width-pong');
+                    gameInput.placeholder = "USE W/S (LEFT). COMPUTER IS PLAYER B. ";
+                    gameInputContainer.style.display = 'none'; // Pong uses keydown for movement, not input field
+                    displayPongInstructions(); // Display instructions immediately
+                    gameReadyToStart = true; // Ready to start with Enter
+                }
+                else if (activeGame === 'tic_tac_toe') {
+                    textGameOutputDiv.classList.add('width-ttt');
+                    gameInput.placeholder = "TYPE 'X' OR 'O' TO CHOOSE YOUR SIDE";
+                    gameInputContainer.style.display = 'flex';
+                    gameSubmitButton.style.display = 'inline-block';
+                    gameReadyToStart = false; // Tic-Tac-Toe starts with choice
+                    displayTicTacToeInstructions(); // Display instructions before sending 'start'
+                    await sendCommand('start');
+                } else {
+                    // Fallback for other text-based games if added later
+                    gameInputContainer.style.display = 'flex';
+                    gameInput.placeholder = "TYPE COMMAND...";
+                    gameSubmitButton.style.display = 'inline-block';
+                    gameReadyToStart = true;
+                }
+                gameInput.focus();
+            }
+        });
+
+        // Handle initials submission
+        initialsSubmitButton.addEventListener('click', async () => {
+            const initials = initialsInput.value.trim().toUpperCase();
+            if (initials.length > 0 && initials.length <= 3) {
+                playerInitials = initials;
+                initialsModal.classList.add('hidden'); // Hide modal
+                gamePlayAreaDiv.classList.remove('hidden'); // Show game area
+
+                // Apply new width class and set input visibility/placeholders based on activeGame
+                // This block now only applies to Snake, as Pong no longer uses the modal
+                if (activeGame === 'snake_ascii') {
+                    textGameOutputDiv.classList.add('width-snake');
+                    gameInput.placeholder = "USE W, A, S, D KEYS. "; // Changed placeholder here
+                    gameInputContainer.style.display = 'none';
+                    await displaySnakeInstructions(); // Await high score fetch
+                    gameReadyToStart = true; // Now ready to start with Enter
+                }
+                gameInput.focus();
+            } else {
+                // Use a custom message box instead of alert
+                textGameOutputDiv.textContent = "Please enter 1-3 initials to play!";
+            }
+        });
+
+        initialsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                initialsSubmitButton.click();
+            }
+        });
+
+
+
+        const handleGameStartKeydown = async (e) => {
+            // Ensure Enter only starts the game if it's ready, no loop is running,
+            // input field is not active, and it's not Tic-Tac-Toe (which starts differently)
+            if (e.key === 'Enter' && gameReadyToStart && gameLoopId === null && document.activeElement !== gameInput && activeGame !== 'tic_tac_toe') {
+                e.preventDefault(); // Prevent default Enter key behavior (e.g., submitting forms)
+                gameReadyToStart = false; // Game is about to start
+
+                // Send the initial 'start' command to the backend
+                await sendCommand('start');
+
+                // Start the game loop based on the active game
+                if (activeGame === 'pong_ascii') {
+                    document.addEventListener('keydown', handlePongKeydown);
+                    document.addEventListener('keyup', handlePongKeyup);
+                    gameLoopId = setInterval(() => {
+                        sendCommand('update', { paddle_a_move_direction: paddleAMoveDirection });
+                    }, 100); // Reduced interval for smoother fast ball movement
+                } else if (activeGame === 'snake_ascii') {
+                    document.addEventListener('keydown', handleSnakeKeydown);
+                    gameLoopId = setInterval(() => {
+                        sendCommand('update', { snake_direction: snakeDirection });
+                    }, 200);
+                }
+            }
+        };
+
+        // Add the global keydown listener for starting games ONCE when the script loads
+        document.addEventListener('keydown', handleGameStartKeydown);
+
+
+        // Event listener for game input submission (primarily for text adventure/number guesser/Tic-Tac-Toe)
+        gameSubmitButton.addEventListener('click', () => {
+            const command = gameInput.value.trim();
+            if (command && (activeGame === 'tic_tac_toe' || (activeGame !== 'pong_ascii' && activeGame !== 'snake_ascii'))) {
+                sendCommand(command);
+            }
+        });
+
+        // Allow pressing Enter in the input field to submit for Tic-Tac-Toe and other text games
+        gameInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const command = gameInput.value.trim();
+                if (command && (activeGame === 'tic_tac_toe' || (activeGame !== 'pong_ascii' && activeGame !== 'snake_ascii'))) {
+                    await sendCommand(command); // Await the sendCommand
+                }
+            }
+        });
+
+        // Keydown handler for ASCII Pong specific controls (W/S for paddle A, R for reset)
+        const handlePongKeydown = (e) => {
+            // W key (move up)
+            if (e.key === 'w' || e.key === 'W') {
+                paddleAMoveDirection = -1;
+            }
+            // S key (move down)
+            else if (e.key === 's' || e.key === 'S') {
+                paddleAMoveDirection = 1;
+            }
+            // R key (reset game)
+            else if (e.key === 'r' || e.key === 'R') {
+                sendCommand('reset');
+                // After reset, the game is ready to start again with Enter
+                gameReadyToStart = true;
+                clearInterval(gameLoopId); // Stop the loop
+                gameLoopId = null;
+                // Re-enable paddle movement listeners if the game is reset and not over
+                document.addEventListener('keydown', handlePongKeydown);
+                document.addEventListener('keyup', handlePongKeyup);
+            }
+        };
+
+        // Keyup handler to stop paddle movement when key is released
+        const handlePongKeyup = (e) => {
+            if ((e.key === 'w' || e.key === 'W' || e.key === 's' || e.key === 'S') && paddleAMoveDirection !== 0) {
+                paddleAMoveDirection = 0; // Stop paddle movement
+            }
+        };
+
+        // Keydown handler for Snake specific controls (W,A,S,D for direction, R for reset)
+        const handleSnakeKeydown = (e) => {
+            // Prevent default browser scrolling for WASD keys
+            if (['w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(e.key)) {
+                e.preventDefault();
+            }
+
+            if (e.key === 'w' || e.key === 'W') {
+                snakeDirection = 'UP';
+            } else if (e.key === 's' || e.key === 'S') {
+                snakeDirection = 'DOWN';
+            } else if (e.key === 'a' || e.key === 'A') {
+                snakeDirection = 'LEFT';
+            } else if (e.key === 'd' || e.key === 'D') {
+                snakeDirection = 'RIGHT';
+            }
+            // R key (reset game)
+            else if (e.key === 'r' || e.key === 'R') {
+                sendCommand('reset');
+                // After reset, the game is ready to start again with Enter
+                gameReadyToStart = true;
+                clearInterval(gameLoopId); // Stop the loop
+                gameLoopId = null;
+                // Re-enable snake movement listener if the game is reset and not over
+                document.addEventListener('keydown', handleSnakeKeydown);
+            }
+        };
+
+        // Back to menu button
+        backToMenuButton.addEventListener('click', () => {
+            // Stop any running game loop
+            if (gameLoopId) {
+                clearInterval(gameLoopId);
+                gameLoopId = null;
+            }
+
+            // Remove game-specific key listeners
+            document.removeEventListener('keydown', handlePongKeydown);
+            document.removeEventListener('keyup', handlePongKeyup);
+            document.removeEventListener('keydown', handleSnakeKeydown);
+
+            // Hide game play area, show game selection
+            gamePlayAreaDiv.classList.add('hidden');
+            gamePlayAreaDiv.style.display = 'none'; // Ensure display is none
+            gameSelectionDiv.classList.remove('hidden');
+            gameSelectionDiv.style.display = 'flex'; // Ensure display flex
+            // highScoresSection.classList.remove('hidden'); // This was already commented/removed
+
+            // Reset active game state
+            activeGame = null;
+            gameReadyToStart = false;
+            playerInitials = ''; // Clear initials when going back to menu
+
+            // Clear game output area and reset alignment
+            textGameOutputDiv.textContent = '';
+            textGameOutputDiv.classList.remove('text-center-content'); // Ensure alignment is reset
+            gameInput.value = '';
+            gameInputContainer.style.display = 'flex'; // Show input for menu interaction if needed
+            gameInput.placeholder = "SELECT A GAME TO PLAY";
+        });
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initially hide game play area
+            gamePlayAreaDiv.classList.add('hidden');
+            gamePlayAreaDiv.style.display = 'none'; // Ensure display is none for initial state
+            gameInputContainer.style.display = 'none'; // Hide input until a game is selected/started
+            initialsModal.classList.add('hidden'); // Ensure modal is hidden initially
+        });
+
+        // Event listener for the game reset button
+        gameResetButton.addEventListener('click', async () => {
+            if (activeGame) {
+                // Stop the current game loop if it's running
+                if (gameLoopId) {
+                    clearInterval(gameLoopId);
+                    gameLoopId = null;
+                }
+
+                // Send the reset command to the backend and await its response
+                await sendCommand('reset');
+
+                // After reset, the game is ready to be started again with Enter
+                gameReadyToStart = true;
+
+                // Re-attach appropriate key listeners based on the active game
+                if (activeGame === 'pong_ascii') {
+                    document.addEventListener('keydown', handlePongKeydown);
+                    document.addEventListener('keyup', handlePongKeyup);
+                    paddleAMoveDirection = 0; // Reset paddle direction
+                } else if (activeGame === 'snake_ascii') {
+                    document.addEventListener('keydown', handleSnakeKeydown);
+                    snakeDirection = 'RIGHT'; // Reset snake direction
+                }
+
+            }
+        });
+    </script>
+</body>
+</html>
